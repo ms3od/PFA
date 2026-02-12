@@ -6,7 +6,7 @@ on:
       - "https://www.google.com/alerts/feeds/14115988719291167525/2746694005765036036"
       - "https://www.google.com/alerts/feeds/14115988719291167525/9268419172656067202"
     config:
-      every: "*/5 * * * *"
+      every: "*/15 * * * *"
       filterScript: |
         const title = item.title.toLowerCase();
         const content = item.contentSnippet ? item.contentSnippet.toLowerCase() : "";
@@ -16,22 +16,28 @@ on:
         if (!fullText.includes("2026")) return false;
 
         // 2. MUR DE PROTECTION : Rejet strict des termes indésirables
-        // Même si Google filtre, ce script est votre "Double Vérification" rationnelle
         const dealBreakers = [
           "technicien", 
-          "technicians", 
+          "technicians",
           "commercial", 
-          "vente", 
+          "sales",
           "centre d'appel", 
           "call center", 
           "pfe", 
-          "fin d'études"
+          "projet de fin d'études"
         ];
         
-        if (dealBreakers.some(word => title.includes(word))) return false;
+        if (dealBreakers.some(word => fullText.includes(word))) return false;
 
-        // 3. DÉTECTION DE CIBLES PRIORITAIRES (DPI / Automatisme / Grands Comptes)
-        const targets = ["abb", "siemens", "schneider", "ocp", "safran", "stellantis", "renault", "automatisme", "scada"];
+        // 3. DÉTECTION DE CIBLES PRIORITAIRES
+        const targets = [
+          "abb", 
+          "ocp", 
+          "safran", 
+          "stellantis", 
+          "renault", 
+          "automatisme"
+        ];
         item.isPriority = targets.some(t => fullText.includes(t));
 
         return true;
@@ -48,9 +54,10 @@ jobs:
           token: ${{ secrets.TELEGRAM_TOKEN }}
           format: markdown
           message: |
-            ${{ on.rss.outputs.isPriority && '**CIBLE PRIORITAIRE DÉTECTÉE**' || '**Nouvelle Opportunité PFA**' }}
+            ${{ on.rss.outputs.isPriority && 'CIBLE PRIORITAIRE DÉTECTÉE' || 'Nouvelle Opportunité PFA' }}
             
-            **Poste :** ${{ on.rss.outputs.title }}
-            **Date :** ${{ on.rss.outputs.isoDate }}
+            **Poste:** ${{ on.rss.outputs.title }}
+            **Source:** ${{ on.rss.outputs.sourceTitle || 'Google Alert' }}
+            **Date:** ${{ on.rss.outputs.isoDate }}
             
             [Voir l'offre](${{ on.rss.outputs.link }})
