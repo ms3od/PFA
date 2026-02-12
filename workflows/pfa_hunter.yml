@@ -1,0 +1,54 @@
+name: Chasseur de Stage PFA 2026
+
+on:
+  rss:
+    url: "https://www.google.com/alerts/feeds/14115988719291167525/6033667895818747568"
+    config:
+      every: "0 */2 * * *"
+      filterScript: |
+        const title = item.title.toLowerCase();
+        const content = item.contentSnippet ? item.contentSnippet.toLowerCase() : "";
+        const fullText = title + " " + content;
+
+        // 1. FILTRE DE PRÉCISION : Année 2026 obligatoire
+        if (!fullText.includes("2026")) return false;
+
+        // 2. MUR DE PROTECTION : Rejet strict des termes indésirables
+        // Même si Google filtre, ce script est votre "Double Vérification" rationnelle
+        const dealBreakers = [
+          "technicien", 
+          "technicians", 
+          "commercial", 
+          "vente", 
+          "centre d'appel", 
+          "call center", 
+          "pfe", 
+          "fin d'études"
+        ];
+        
+        if (dealBreakers.some(word => title.includes(word))) return false;
+
+        // 3. DÉTECTION DE CIBLES PRIORITAIRES (DPI / Automatisme / Grands Comptes)
+        const targets = ["abb", "siemens", "schneider", "ocp", "safran", "stellantis", "renault", "automatisme", "scada"];
+        item.isPriority = targets.some(t => fullText.includes(t));
+
+        return true;
+
+jobs:
+  notify:
+    name: Notification Telegram
+    runs-on: ubuntu-latest
+    steps:
+      - name: Envoyer Alerte
+        uses: appleboy/telegram-action@master
+        with:
+          to: ${{ secrets.TELEGRAM_TO }}
+          token: ${{ secrets.TELEGRAM_TOKEN }}
+          format: markdown
+          message: |
+            ${{ on.rss.outputs.isPriority && '**CIBLE PRIORITAIRE DÉTECTÉE**' || '**Nouvelle Opportunité PFA**' }}
+            
+            **Poste :** ${{ on.rss.outputs.title }}
+            **Date :** ${{ on.rss.outputs.isoDate }}
+            
+            [Voir l'offre](${{ on.rss.outputs.link }})
