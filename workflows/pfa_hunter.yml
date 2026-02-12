@@ -2,7 +2,7 @@ name: Chasseur de Stage PFA 2026
 
 on:
   rss:
-    url: "https://www.google.com/alerts/feeds/14115988719291167525/6033667895818747568"
+    url: "https://www.google.com/alerts/feeds/14115988719291167525/2746694005765036036"
     config:
       every: "0 */2 * * *"
       filterScript: |
